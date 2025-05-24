@@ -1,0 +1,11 @@
+﻿@code {
+    [Parameter] public string Prompt { get; set; } = "";
+}
+
+<div class="output-panel">
+    <h3>Output</h3>
+    <div class="output-box">
+        <p>Prompt received: @Prompt</p>
+        <p>Agents will generate their results here.</p>
+    </div>
+</div>

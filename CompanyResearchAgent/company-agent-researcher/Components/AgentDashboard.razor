@@ -1,0 +1,68 @@
+﻿@using System.Text.Json
+
+@code {
+    [Parameter] public List<AgentModel> Agents { get; set; } = new();
+
+    private Dictionary<string, (double X, double Y)> positions = new();
+
+    protected override void OnParametersSet()
+    {
+        CalculatePositions();
+    }
+
+    private void CalculatePositions()
+    {
+        const double spacingX = 160;
+        const double spacingY = 140;
+        positions.Clear();
+
+        for (int i = 0; i < Agents.Count; i++)
+        {
+            if (string.IsNullOrWhiteSpace(Agents[i].Id))
+                Console.WriteLine($"[Agent {i}] has empty ID!");
+
+            double x = spacingX * (i % 5);
+            double y = spacingY * (i / 5);
+            positions[Agents[i].Id] = (x, y);
+            Console.WriteLine($"[Positioned] {Agents[i].Label} → X:{x} Y:{y}");
+        }
+    }
+
+
+    private (double X, double Y) GetPosition(string id)
+    {
+        return positions.TryGetValue(id, out var pos) ? pos : (0, 0);
+    }
+
+
+}
+
+<div class="agent-graph-container">
+    <svg class="connector-layer">
+        @foreach (var agent in Agents)
+        {
+            var start = GetPosition(agent.Id);
+            foreach (var dep in agent.DependsOn)
+            {
+                var end = GetPosition(dep);
+                <line x1="@(end.X + 60)" y1="@(end.Y + 50)" x2="@(start.X + 60)" y2="@(start.Y + 50)" class="connector-line" />
+
+            }
+        }
+    </svg>
+
+    <div class="agent-layer">
+        @foreach (var agent in Agents)
+        {
+            var pos = GetPosition(agent.Id);
+            <div class="agent-node @agent.Status"
+                 style="left:@(pos.X)px; top:@(pos.Y)px;">
+                <img src="images/robot-svgrepo-com.svg" alt="@agent.Label" />
+                <div class="agent-label">@agent.Label</div>
+                <div class="agent-progress">
+                    <div class="progress-bar" style="width:@($"{agent.Progress}%")"></div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

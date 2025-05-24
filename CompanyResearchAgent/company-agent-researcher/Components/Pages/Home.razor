@@ -1,7 +1,120 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Web
 
-<PageTitle>Home</PageTitle>
+@inject IJSRuntime JS
 
-<h1>Hello, world!</h1>
+<div class="home-container">
+    <!-- Token Bar -->
+    <div class="token-bar-wrapper">
+        <div class="token-bar">
+            <span>@tokenCount tokens</span>
+            <button class="buy-button" @onclick="ToggleStripeTab">Buy Credits</button>
+        </div>
+    </div>
 
-Welcome to your new app.
+    <!-- Stripe Sidebar -->
+    <div class="stripe-side-tab @(showStripeTab ? "show" : "")">
+        <div class="side-tab-header">
+            <h3>Buy Credits</h3>
+            <button class="close-button" @onclick="ToggleStripeTab">&times;</button>
+        </div>
+        <div class="side-tab-content">
+            <div id="payment-element"></div>
+            <button class="buy-button" @onclick="SubmitPayment">Pay</button>
+        </div>
+    </div>
+
+    <!-- Main UI -->
+    <h1 class="main-title">Joke Demo</h1>
+
+    <div class="prompt-section">
+        <PromptBar OnPromptSubmitted="HandlePrompt" />
+    </div>
+
+    @if (agents?.Any() == true)
+    {
+        <div class="dashboard-section">
+            <AgentDashboard Agents="agents" />
+        </div>
+
+        <div class="output-section">
+            <AgentOutput Prompt="CurrentPrompt" />
+        </div>
+    }
+
+    <footer class="layout-footer">
+        <p>&copy; 2025 AI Shop</p>
+    </footer>
+</div>
+
+@code {
+    private bool showStripeTab = false;
+    private int tokenCount = 0;
+    private string clientSecret = "";
+    private string CurrentPrompt { get; set; } = "";
+    private List<AgentModel> agents = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        tokenCount = await LoadTokenCountAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (showStripeTab && !string.IsNullOrEmpty(clientSecret))
+        {
+            await JS.InvokeVoidAsync("initializeStripe", clientSecret);
+        }
+    }
+
+    private async void ToggleStripeTab()
+    {
+        showStripeTab = !showStripeTab;
+
+        if (showStripeTab)
+        {
+            clientSecret = await GetClientSecretAsync();
+            StateHasChanged(); // Force re-render
+        }
+    }
+
+    private async Task SubmitPayment()
+    {
+        await JS.InvokeVoidAsync("submitStripePayment");
+    }
+
+    private Task<int> LoadTokenCountAsync() => Task.FromResult(0);
+    private Task<string> GetClientSecretAsync() => Task.FromResult("<YOUR_CLIENT_SECRET>");
+
+    private void HandlePrompt(string prompt)
+    {
+        CurrentPrompt = prompt;
+
+        agents = new List<AgentModel>
+        {
+            new() { Id = "1", Label = "Parser", DependsOn = new() },
+            new() { Id = "2", Label = "Entity Extractor", DependsOn = new() { "1" } },
+            new() { Id = "3", Label = "Sentiment Checker", DependsOn = new() { "1" } },
+            new() { Id = "4", Label = "Keyword Mapper", DependsOn = new() { "2" } },
+            new() { Id = "5", Label = "Market Validator", DependsOn = new() { "3" } },
+            new() { Id = "6", Label = "Statistical Model", DependsOn = new() { "4" } },
+            new() { Id = "7", Label = "Risk Evaluator", DependsOn = new() { "5" } },
+            new() { Id = "8", Label = "Response Composer", DependsOn = new() { "6", "7" } },
+            new() { Id = "9", Label = "Metadata Generator", DependsOn = new() { "2", "3" } },
+            new() { Id = "10", Label = "Data Linker", DependsOn = new() { "9" } },
+            new() { Id = "11", Label = "Summarizer", DependsOn = new() { "8", "10" } },
+            new() { Id = "12", Label = "Bias Detector", DependsOn = new() { "3" } },
+            new() { Id = "13", Label = "Formatter", DependsOn = new() { "11" } },
+            new() { Id = "14", Label = "Compliance Bot", DependsOn = new() { "12" } },
+            new()
+            {
+                Id = "15",
+                Label = "Final Review Bot",
+                DependsOn = Enumerable.Range(1, 14).Select(x => x.ToString()).ToList()
+            }
+        };
+
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,19 @@
+﻿@code {
+    [Parameter] public EventCallback<string> OnPromptSubmitted { get; set; }
+    private string Prompt { get; set; } = "";
+
+    private async Task Submit()
+    {
+        if (!string.IsNullOrWhiteSpace(Prompt))
+        {
+            await OnPromptSubmitted.InvokeAsync(Prompt);
+        }
+    }
+}
+
+<div class="prompt-wrapper">
+    <input @bind="Prompt" placeholder="Enter prompt..." class="prompt-input" />
+    <button @onclick="Submit" class="prompt-send">
+        <span class="arrow">▲</span>
+    </button>
+</div>
